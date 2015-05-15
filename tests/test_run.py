@@ -9,7 +9,7 @@ import mock
 import pytest
 import numpy as np
 
-from .context import holonets.run
+from .context import holonets
 
 class TestHolonetsRun(unittest.TestCase):
     """
