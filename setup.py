@@ -22,8 +22,8 @@ setup(name='holo-nets',
       tests_require=['pytest'],
       install_requires=[
           'pytest',
-          'holoviews'
-          
+          'holoviews',
+          'numpy'
       ],
       cmdclass={'test': PyTest},
 )
