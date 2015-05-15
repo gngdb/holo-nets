@@ -24,8 +24,8 @@ class TestHolonetsTrain(unittest.TestCase):
         self.rval = rng.randn(3)
         # make mock Theano functions
         fprop_train = mock.MagicMock(return_value=self.rval[0])
-        fprop_test = mock.MagickMock(return_value=self.rval[1])
-        independent = mock.MagickMock(return_value=self.rval[2])
+        fprop_test = mock.MagicMock(return_value=self.rval[1])
+        independent = mock.MagicMock(return_value=self.rval[2])
         # train function expects to take these as dictionary with
         # entries to indicate whether to run on train, test or eval 
         # independently after running an epoch

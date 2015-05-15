@@ -20,7 +20,7 @@ class TestHolonetsRun(unittest.TestCase):
     def setUpClass(self):
         # create mock reqs
         self.channel_name = 'Dummy Channel'
-        self.train_function = mock.MagickMock(return_value={
+        self.train_function = mock.MagicMock(return_value={
             self.channel_name: 1 
             })
 
