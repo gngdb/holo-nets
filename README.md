@@ -1,3 +1,4 @@
+[![Stories in Ready](https://badge.waffle.io/gngdb/holo-nets.png?label=ready&title=Ready)](https://waffle.io/gngdb/holo-nets)
 # holo-nets
 
 Simple wrapper around Holoviews for training neural networks interactively and monitoring channels.
