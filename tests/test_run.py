@@ -7,6 +7,7 @@
 import unittest
 import mock
 import pytest
+import numpy as np
 
 from .context import holonets.run
 
@@ -32,7 +33,8 @@ class TestHolonetsRun(unittest.TestCase):
         N_epochs = 10
         test_holomap = self.train_loop.run(10)
         # check holomap contains the right data
-        assert test_holomap[self.channel_name].data == np.ones(10,2)
+        expected = np.array([np.arange(1,11),np.ones(10)]) 
+        assert test_holomap[self.channel_name].data == expected
 
 def main():
     unittest.main()
