@@ -1,4 +1,7 @@
 [![Stories in Ready](https://badge.waffle.io/gngdb/holo-nets.png?label=ready&title=Ready)](https://waffle.io/gngdb/holo-nets)
+
+![Travis Badge](https://travis-ci.org/gngdb/holo-nets.svg?branch=master)
+
 # holo-nets
 
 Simple wrapper around Holoviews for training neural networks interactively and monitoring channels.
@@ -29,3 +32,4 @@ off automatically on different GPUs, saving to the same pickle file.
 
 [holomap]: https://ioam.github.io/holoviews/Tutorials/Exploring_Data
 [holoviews]: https://ioam.github.io/holoviews/index.html
+
