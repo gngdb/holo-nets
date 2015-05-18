@@ -31,18 +31,18 @@ class TestHolonetsTrain(unittest.TestCase):
         # independently after running an epoch
         # Also, should contain the name of the channel
         self.train_channel = {
-                'name':'Train Channel',
+                'names':['Train Channel'],
                 'dataset':'Train',
                 'eval':fprop_train,
-                'dimensions':'Loss'
+                'dimensions':['Loss']
         }
         self.test_channel = {
-                'name':'Test Channel',
+                'names':['Test Channel'],
                 'dataset':'Test',
                 'eval':fprop_test
         }
         self.independent = {
-                'name':'Independent Channel',
+                'names':['Independent Channel'],
                 'dataset':'None',
                 'eval':independent
         }
