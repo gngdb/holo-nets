@@ -1,33 +1,81 @@
 #!/usr/bin/env python
 
-
+import numpy as np
 
 class Train:
     """
     Iterator class that runs theano functions over data while gathering
     the resulting monitoring values for plotting.
     """
-    def __init__(self, *channels):
+    def __init__(self, *channels, n_batches={'train':1, 
+                                             'validation':1, 
+                                             'test':1}):
         """
         Expecting each channel as a dictionary with the following entries:
-        - "name": <Name of channel as string>
+        - "names": <Names of channels as tuple of strings>
         - "dataset": <Which dataset to average this value over (one of train, 
         test, validation). Write "None" for values to be evaluated 
         independently at the end of an epoch.> 
         - "eval": <Theano function to evaluate, expecting it to take an iteger 
         index to slice into a shared variable dataset>
         - "dimensions": <value dimension as string or Holoviews Dimension>
+        Also, need to know how many batches are in the dataset to iterate over:
+        - n_batches - number of batches in the dataset
         """
+        self.n_batches = n_batches
         # make a dictionary of channel:[dimension]
         self.dimensions = {}
         for channel in channels:
             dimension = channel.get('dimensions',False)
             if dimension:
-                self.dimensions[channel['name']] = [dimension]
-
+                self.dimensions[channel['names']] = [dimension]
+        
+        # store channels
+        self.channels = channels
 
     def __iter__(self):
         return self
 
     def next(self):
-        pass
+        self.collected_channels = {}
+        # iterate over train, validation and test channels:
+        for dataset_name in ['train', 'validation', 'test']:
+            # gather right channels for this dataset
+            channels = [channel for channel in self.channels 
+                    if channel['dataset'] == dataset_name]
+            # check we have some channels to iterate over
+            if channels != []:
+                for i in range(n_batches[dataset_name]):
+                    # on each batch, execute functions for training channels and
+                    # gather results
+                    for channel in channels:
+                        returned_vals = enforce_iterable(channel['eval'](i))
+                        # match them to channel names
+                        for name, rval in zip(channel['names'],returned_vals):
+                            if not self.collected_channels.get(name, False):
+                                self.collected_channels[name] = []
+                            self.collected_channels[name].append(rval)
+                # take the mean over this epoch for each channel
+                for channel in channels:
+                    for name in channel['names']:
+                        self.collected_channels[name] = \
+                                np.mean(self.collected_channels[name])
+        # finally, gather the independent channels
+        channels = [channel for channel in self.channels 
+                    if channel['dataset'] == 'None']
+        for channel in channels:
+            # assume the function requires no input (could be useful to add 
+            # inputs later)
+            returned_vals = enforce_iterable(channel['eval']())
+            for name, rval in zip(channel['names'], returned_vals):
+                
+        return self.collected_channels
+
+def enforce_iterable(foo):
+    """
+    Function to make sure anything passed to it is iterable, even if it's 
+    not.
+    """
+    if not hasattr(foo, '__iter__'):
+        foo = [foo]
+    return foo
