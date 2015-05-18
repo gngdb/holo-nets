@@ -79,4 +79,7 @@ def enforce_iterable(foo):
     """
     if not hasattr(foo, '__iter__'):
         foo = [foo]
+    elif isinstance(foo, np.ndarray):
+        if foo.shape == ():
+            foo = [foo.tolist()]
     return foo
