@@ -40,26 +40,30 @@ class Expressions:
 
         # Theano variables for minibatches and batch slicing
         self.batch_index = T.iscalar('batch_index')
-        self.batch_slice = slice(batch_index*batch_size,
-                                (batch_index+1)*batch_size)
+        self.batch_slice = slice(self.batch_index*batch_size,
+                                (self.batch_index+1)*batch_size)
         self.X_batch = X_tensor_type('X')
         self.y_batch = T.ivector('y')
 
         # set up the objective
         self.objective = lasagne.objectives.Objective(self.output_layer, 
                 loss_function=loss_function)
-        self.loss_train = self.objective.get_loss(X_batch, target=y_batch, 
+        self.loss_train = self.objective.get_loss(self.X_batch, 
+                target=self.y_batch, 
                 deterministic=deterministic)
-        self.loss_eval = self.objective.get_loss(X_batch, target=y_batch,
+        self.loss_eval = self.objective.get_loss(self.X_batch, 
+                target=self.y_batch,
                 deterministic=True)
 
         pred = T.argmax(
-            self.output_layer.get_output(X_batch, deterministic=True), axis=1)
-        self.accuracy = T.mean(T.eq(pred, y_batch), dtype=theano.config.floatX)
+            self.output_layer.get_output(self.X_batch, 
+                deterministic=True), axis=1)
+        self.accuracy = T.mean(T.eq(pred, self.y_batch), 
+                dtype=theano.config.floatX)
     
         # build initial list of updates at initialisation (makes sense right)
         all_params = lasagne.layers.get_all_params(output_layer)
-        self.updates = update_rule(loss_train, all_params, learning_rate)
+        self.updates = update_rule(self.loss_train, all_params, learning_rate)
 
         # initialise empty channels list
         self.channels = []
@@ -69,36 +73,39 @@ class Expressions:
         Returns a list of dictionaries that can be passed to the train
         module.
         """
-        iter_train = theano.function([batch_index], loss_train, 
-                updates=updates,
-                givens={
-                    self.X_batch: self.dataset['X_train'][batch_slice],
-                    self.y_batch: self.dataset['y_train'][batch_slice],
-                },
-        )
+        if not any("Train Loss" == x["names"][0] for x in self.channels):
+            iter_train = theano.function([self.batch_index], self.loss_train, 
+                    updates=self.updates,
+                    givens={
+                        self.X_batch: self.dataset['X_train'][self.batch_slice],
+                        self.y_batch: self.dataset['y_train'][self.batch_slice],
+                    },
+            )
 
-        self.channels.append({
-            "names":("Train Loss",),
-            "dataset": "Train",
-            "eval": iter_train,
-            "dimensions": ['Loss']
-            }
-        )
+            self.channels.append({
+                "names":("Train Loss",),
+                "dataset": "Train",
+                "eval": iter_train,
+                "dimensions": ['Loss']
+                }
+            )
 
-        iter_valid  = theano.function([batch_index], [loss_eval, accuracy],
-                givens={
-                    self.X_batch: self.dataset['X_valid'][batch_slice],
-                    self.y_batch: self.dataset['y_valid'][batch_slice],
-                },
-        )
+        if not any("Validation Loss" == x["names"][0] for x in self.channels):
+            iter_valid  = theano.function([self.batch_index], 
+                    [self.loss_eval, self.accuracy],
+                    givens={
+                        self.X_batch: self.dataset['X_valid'][self.batch_slice],
+                        self.y_batch: self.dataset['y_valid'][self.batch_slice],
+                    },
+            )
 
-        self.channels.append({
-            "names":("Validation Loss","Validation Accuracy"),
-            "dataset": "Validation",
-            "eval": iter_valid,
-            "dimensions": ['Loss', 'Accuracy']
-            }
-        )
+            self.channels.append({
+                "names":("Validation Loss","Validation Accuracy"),
+                "dataset": "Validation",
+                "eval": iter_valid,
+                "dimensions": ['Loss', 'Accuracy']
+                }
+            )
 
         return self.channels
 
@@ -114,6 +121,6 @@ def enforce_shared(dataset):
             dataset[X_name] = theano.shared(
                     lasagne.utils.floatX(dataset[X_name]))
     for y_name in [n for n in dataset.keys() if 'y' in n]:
-        if not isinstance(dataset[y_name], theano.tensor.var.TensorVariable):
+        if not isinstance(dataset[y_name], T.TensorVariable):
             dataset[y_name] = T.cast(dataset[y_name].ravel(), 'int32')
     return dataset
