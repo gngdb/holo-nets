@@ -1,2 +1,2 @@
 Theano==0.7
--e git+https://github.com/benanne/Lasagne.git@6b446c0f102305a1d039ff014ccc4d109ec54e6d#egg=Lasagne-origin_HEAD
+git+https://github.com/benanne/Lasagne.git#egg=Lasagne
