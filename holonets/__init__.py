@@ -1,3 +1,3 @@
-import run
-import train
-import monitor
+from . import run
+from . import train
+from . import monitor
