@@ -25,7 +25,7 @@ setup(name='holo-nets',
           'holoviews',
           'numpy',
           'mock',
-          'lasagne',
+          'Lasagne',
           'Theano'
       ],
       cmdclass={'test': PyTest},

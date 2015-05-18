@@ -1,1 +1,2 @@
 Theano==0.7
+Lasagne
