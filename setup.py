@@ -13,7 +13,7 @@ class PyTest(TestCommand):
         pytest.main(self.test_args)
 
 setup(name='holo-nets',
-      version='0.0',
+      version='0.1',
       description='Simple wrapper around Holoviews for training neural '
       'networks interactively and monitoring channels.',
       author='Gavin Gray',
