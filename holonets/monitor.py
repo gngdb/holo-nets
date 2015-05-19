@@ -9,6 +9,7 @@ import lasagne.layers
 import lasagne.utils
 import theano
 import theano.tensor as T
+import time
 
 class Expressions:
     """
@@ -67,6 +68,15 @@ class Expressions:
 
         # initialise empty channels list
         self.channels = []
+
+        # add timer channel
+        self.channels.append({
+                "names": ("Epoch Time",),
+                "dataset": "None",
+                "eval": Timer(),
+                "dimensions": ['seconds']
+            } 
+        )
         
     def build_channels(self):
         """
@@ -124,3 +134,15 @@ def enforce_shared(dataset):
         if not isinstance(dataset[y_name], T.TensorVariable):
             dataset[y_name] = T.cast(dataset[y_name].ravel(), 'int32')
     return dataset
+
+class Timer:
+    """
+    Returns number of seconds since it was last called.
+    """
+    def __init__(self):
+        self.now = time.time()
+
+    def __call__(self):
+        self.then = self.now
+        self.now = time.time()
+        return self.now - self.then
