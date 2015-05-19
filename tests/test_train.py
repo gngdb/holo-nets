@@ -73,8 +73,8 @@ class TestHolonetsTrain(unittest.TestCase):
         Check that it's easily to pull the dimensions back out of this object.
         """
         # want to be able to pull dimensions out using the channels name
-        dimensions = self.train.dimensions[('Train Channel','Train Channel 2')]
-        assert dimensions == ['Loss', 'Misc']
+        dimensions = self.train.dimensions['Train Channel']
+        assert dimensions == ['Loss']
 
 def main():
     unittest.main()
