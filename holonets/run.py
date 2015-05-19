@@ -59,7 +59,7 @@ class EpochLoop:
         holomap = hv.HoloMap(key_dimensions=['Channel'])
         for channel in dict.keys():
             # check for dimensions for this channel
-            value_dimensions = self.dimensions.get(channel, ['Test'])
+            value_dimensions = self.dimensions.get(channel, ['Unknown'])
             # for each channel add Curve entry to the HoloMap
             holomap[(channel)] = hv.Curve(dict[channel], 
                     key_dimensions=['Epoch'],

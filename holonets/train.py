@@ -29,7 +29,8 @@ class Train:
         for channel in channels:
             dimension = channel.get('dimensions',False)
             if dimension:
-                self.dimensions[channel['names']] = enforce_iterable(dimension)
+                for ch,dim in zip(channel['names'],enforce_iterable(dimension)):
+                    self.dimensions[ch] = [dim]
         
         # store channels
         self.channels = channels
