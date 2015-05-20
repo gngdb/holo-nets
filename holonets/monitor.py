@@ -7,6 +7,7 @@ import lasagne.updates
 import lasagne.objectives
 import lasagne.layers
 import lasagne.utils
+import lasagne.regularization
 import theano
 import theano.tensor as T
 import time
@@ -152,6 +153,37 @@ class Expressions:
             "eval": iter_valid,
             "dimensions": ['Loss', 'Accuracy', 'Loss', 'Accuracy']
         }
+
+    def add_update_norm_ratio_channel(self):
+        """
+        Crudely add a channel monitoring the global ratio of update norm to 
+        parameter norm.
+        """
+        # gather L2 norm of all parameters
+        self.L2 = lasagne.regularization.l2(self.output_layer)
+        # and L2 norm of all updates(can use very similar code to that used
+        # by lasagne for this
+        self.update_L2 = sum(T.sum(p**2) for p in self.updates)
+        # take ratio:
+        self.update_ratio = self.L2/self.update_L2
+        
+        # make channel with the ratio of these (from train channel)
+        iter_train = theano.function([self.batch_index], 
+                [self.loss_train, self.accuracy, self.update_ratio], 
+                updates=self.updates,
+                givens={
+                    self.X_batch: self.dataset['X_train'][self.batch_slice],
+                    self.y_batch: self.dataset['y_train'][self.batch_slice],
+                },
+        )
+
+        self.channels['train'] = {
+            "names":("Train Loss","Train Accuracy", "Update Norm Ratio"),
+            "dataset": "Train",
+            "eval": iter_train,
+            "dimensions": ['Loss', 'Accuracy', 'L2/Update L2']
+            }
+
 
 def enforce_shared(dataset):
     """
