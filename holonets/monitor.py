@@ -56,10 +56,10 @@ class Expressions:
                 target=self.y_batch,
                 deterministic=True)
 
-        pred = T.argmax(
+        self.pred = T.argmax(
             self.output_layer.get_output(self.X_batch, 
                 deterministic=True), axis=1)
-        self.accuracy = T.mean(T.eq(pred, self.y_batch), 
+        self.accuracy = T.mean(T.eq(self.pred, self.y_batch), 
                 dtype=theano.config.floatX)
     
         # build initial list of updates at initialisation (makes sense right)
@@ -76,29 +76,21 @@ class Expressions:
                 "eval": Timer(),
                 "dimensions": ['seconds']
             } 
-        
-    def build_channels(self):
-        """
-        Returns a list of dictionaries that can be passed to the train
-        module.
-        """
-        iter_train = theano.function([self.batch_index], self.loss_train, 
-                updates=self.updates,
-                givens={
-                    self.X_batch: self.dataset['X_train'][self.batch_slice],
-                    self.y_batch: self.dataset['y_train'][self.batch_slice],
-                },
-        )
 
-        self.channels['train'] = {
-            "names":("Train Loss",),
-            "dataset": "Train",
-            "eval": iter_train,
-            "dimensions": ['Loss']
-            }
+    def add_dropout_channels(self):
+        """
+        Monitor the validation accuracy and loss with dropout.
+        """
+        # accuracy with dropout
+        self.dropout_pred = T.argmax(
+            self.output_layer.get_output(self.X_batch, 
+                deterministic=False), axis=1)
+        self.dropout_accuracy = T.mean(T.eq(self.dropout_pred, self.y_batch), 
+                dtype=theano.config.floatX)
 
-        iter_valid  = theano.function([self.batch_index], 
-                [self.loss_eval, self.accuracy],
+        iter_valid = theano.function([self.batch_index], 
+                [self.loss_eval, self.accuracy, 
+                    self.loss_train, self.dropout_accuracy],
                 givens={
                     self.X_batch: self.dataset['X_valid'][self.batch_slice],
                     self.y_batch: self.dataset['y_valid'][self.batch_slice],
@@ -106,13 +98,60 @@ class Expressions:
         )
 
         self.channels['validation'] = {
-            "names":("Validation Loss","Validation Accuracy"),
+            "names":("Validation Loss","Validation Accuracy",
+                "Validation Loss with Dropout", 
+                "Validation Accuracy with Dropout"),
             "dataset": "Validation",
             "eval": iter_valid,
-            "dimensions": ['Loss', 'Accuracy']
-            }
+            "dimensions": ['Loss', 'Accuracy', 'Loss', 'Accuracy']
+        }
+        
+    def build_channels(self):
+        """
+        Returns a list of dictionaries that can be passed to the train
+        module.
+        """
+        self.add_default_channels()
 
         return self.channels.values()
+    
+    def add_default_channels(self):
+        """
+        Checks for and adds default channels, if they've not been made yet.
+        """
+        if not self.channels.get('train', False):
+            iter_train = theano.function([self.batch_index], 
+                    [self.loss_train, self.accuracy], 
+                    updates=self.updates,
+                    givens={
+                        self.X_batch: self.dataset['X_train'][self.batch_slice],
+                        self.y_batch: self.dataset['y_train'][self.batch_slice],
+                    },
+            )
+
+            self.channels['train'] = {
+                "names":("Train Loss","Train Accuracy"),
+                "dataset": "Train",
+                "eval": iter_train,
+                "dimensions": ['Loss', 'Accuracy']
+                }
+
+        if not self.channels.get('validation', False):
+            iter_valid  = theano.function([self.batch_index], 
+                    [self.loss_eval, self.accuracy],
+                    givens={
+                        self.X_batch: self.dataset['X_valid'][self.batch_slice],
+                        self.y_batch: self.dataset['y_valid'][self.batch_slice],
+                    },
+            )
+
+            self.channels['validation'] = {
+                "names":("Validation Loss","Validation Accuracy"),
+                "dataset": "Validation",
+                "eval": iter_valid,
+                "dimensions": ['Loss', 'Accuracy']
+                }
+
 
 def enforce_shared(dataset):
     """
