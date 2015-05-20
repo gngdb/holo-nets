@@ -67,57 +67,52 @@ class Expressions:
         self.updates = update_rule(self.loss_train, all_params, learning_rate)
 
         # initialise empty channels list
-        self.channels = []
+        self.channels = {}
 
         # add timer channel
-        self.channels.append({
+        self.channels['timer'] = {
                 "names": ("Epoch Time",),
                 "dataset": "None",
                 "eval": Timer(),
                 "dimensions": ['seconds']
             } 
-        )
         
     def build_channels(self):
         """
         Returns a list of dictionaries that can be passed to the train
         module.
         """
-        if not any("Train Loss" == x["names"][0] for x in self.channels):
-            iter_train = theano.function([self.batch_index], self.loss_train, 
-                    updates=self.updates,
-                    givens={
-                        self.X_batch: self.dataset['X_train'][self.batch_slice],
-                        self.y_batch: self.dataset['y_train'][self.batch_slice],
-                    },
-            )
+        iter_train = theano.function([self.batch_index], self.loss_train, 
+                updates=self.updates,
+                givens={
+                    self.X_batch: self.dataset['X_train'][self.batch_slice],
+                    self.y_batch: self.dataset['y_train'][self.batch_slice],
+                },
+        )
 
-            self.channels.append({
-                "names":("Train Loss",),
-                "dataset": "Train",
-                "eval": iter_train,
-                "dimensions": ['Loss']
-                }
-            )
+        self.channels['train'] = {
+            "names":("Train Loss",),
+            "dataset": "Train",
+            "eval": iter_train,
+            "dimensions": ['Loss']
+            }
 
-        if not any("Validation Loss" == x["names"][0] for x in self.channels):
-            iter_valid  = theano.function([self.batch_index], 
-                    [self.loss_eval, self.accuracy],
-                    givens={
-                        self.X_batch: self.dataset['X_valid'][self.batch_slice],
-                        self.y_batch: self.dataset['y_valid'][self.batch_slice],
-                    },
-            )
+        iter_valid  = theano.function([self.batch_index], 
+                [self.loss_eval, self.accuracy],
+                givens={
+                    self.X_batch: self.dataset['X_valid'][self.batch_slice],
+                    self.y_batch: self.dataset['y_valid'][self.batch_slice],
+                },
+        )
 
-            self.channels.append({
-                "names":("Validation Loss","Validation Accuracy"),
-                "dataset": "Validation",
-                "eval": iter_valid,
-                "dimensions": ['Loss', 'Accuracy']
-                }
-            )
+        self.channels['validation'] = {
+            "names":("Validation Loss","Validation Accuracy"),
+            "dataset": "Validation",
+            "eval": iter_valid,
+            "dimensions": ['Loss', 'Accuracy']
+            }
 
-        return self.channels
+        return self.channels.values()
 
 def enforce_shared(dataset):
     """
@@ -146,3 +141,5 @@ class Timer:
         self.then = self.now
         self.now = time.time()
         return self.now - self.then
+
+
