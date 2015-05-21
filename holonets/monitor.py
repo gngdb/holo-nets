@@ -155,28 +155,19 @@ class Expressions:
             "dimensions": ['Loss', 'Accuracy', 'Loss', 'Accuracy']
         }
 
-    def add_update_norm_ratio_channel(self):
+    def add_update_ratio_channel(self):
         """
         Crudely add a channel monitoring the global ratio of update norm to 
         parameter norm.
         """
-        # gather L2 norm of all parameters
-        self.L2 = lasagne.regularization.l2(self.output_layer)
-        # and L2 norm of all updates(can use very similar code to that used
-        # by lasagne for this
-        self.update_L2 = sum(T.sum(p**2) for p in self.updates)
-        # take ratio:
-        self.update_ratio = self.L2/self.update_L2
-
-        # adding another channel that is the norm of the ratio of each update 
-        # to it's parameter
-        self.update_ratios = [param/self.updates[param] for param in 
+        self.update_ratios = [self.updates[param]/param for param in 
                 self.all_params]
-        self.ratio_of_updates = sum(T.sum(p**2) for p in self.update_ratios)
-        
+        self.mean_update_ratio = sum(T.mean(p) for p in self.update_ratios)/len(self.update_ratios)
+        self.sigma_update_ratio = sum(T.sqrt(T.var(p)) for p in self.update_ratios)/len(self.update_ratios)
+
         # make channel with the ratio of these (from train channel)
         iter_train = theano.function([self.batch_index], 
-                [self.loss_train, self.accuracy, self.update_ratio, self.ratio_of_updates], 
+                [self.loss_train, self.accuracy, self.mean_update_ratio, self.sigma_update_ratio], 
                 updates=self.updates,
                 givens={
                     self.X_batch: self.dataset['X_train'][self.batch_slice],
@@ -185,10 +176,10 @@ class Expressions:
         )
 
         self.channels['train'] = {
-            "names":("Train Loss","Train Accuracy", "Update Norm Ratio", "Norm of Update Ratios"),
+            "names":("Train Loss","Train Accuracy", "Mean Update Ratio", "Sigma Update Ratio"),
             "dataset": "Train",
             "eval": iter_train,
-            "dimensions": ['Loss', 'Accuracy', 'L2/Update L2', 'L2(param/update)']
+            "dimensions": ['Loss', 'Accuracy', 'update/param', 'sigma(update/param)']
             }
 
 def enforce_shared(dataset):
