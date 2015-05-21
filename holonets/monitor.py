@@ -160,10 +160,12 @@ class Expressions:
         Crudely add a channel monitoring the global ratio of update norm to 
         parameter norm.
         """
-        self.update_ratios = [self.updates[param]/param for param in 
-                self.all_params]
-        self.mean_update_ratio = sum(T.mean(p) for p in self.update_ratios)/len(self.update_ratios)
-        self.sigma_update_ratio = sum(T.sqrt(T.var(p)) for p in self.update_ratios)/len(self.update_ratios)
+        self.update_ratios = [T.abs_((self.updates[param]-param)/param) 
+                for param in self.all_params]
+        self.mean_update_ratio = sum(T.mean(p) 
+                for p in self.update_ratios)/len(self.update_ratios)
+        self.sigma_update_ratio = sum(T.sqrt(T.var(p)) 
+                for p in self.update_ratios)/len(self.update_ratios)
 
         # make channel with the ratio of these (from train channel)
         iter_train = theano.function([self.batch_index], 
