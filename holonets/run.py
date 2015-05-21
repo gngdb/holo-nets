@@ -18,6 +18,7 @@ class EpochLoop:
         self.train = train
         self.dimensions = dimensions
         self.i = 0
+        self.results = {}
 
     def run(self, N_epochs, verbose=False):
         """
@@ -26,7 +27,6 @@ class EpochLoop:
         """
         if verbose:
             print_verbose_intro(N_epochs)
-        results = {}
 
         # if restarting want to go for N_epochs more
         N_epochs += self.i
@@ -37,9 +37,9 @@ class EpochLoop:
             for channel in [ch for ch in epoch.keys() if ch != 'number']:
                 # store results in lists in dictionaries:
                 try:
-                    results[channel].append((self.i, epoch[channel]))
+                    self.results[channel].append((self.i, epoch[channel]))
                 except KeyError:
-                    results[channel] = [(self.i, epoch[channel])]
+                    self.results[channel] = [(self.i, epoch[channel])]
 
             if verbose:
                 print_dot()
@@ -47,7 +47,7 @@ class EpochLoop:
                 break
 
         # turn the dictionary into a HoloMap
-        holo_results = self._make_holomap(results)
+        holo_results = self._make_holomap(self.results)
         
         return holo_results
 
