@@ -64,8 +64,9 @@ class Expressions:
                 dtype=theano.config.floatX)
     
         # build initial list of updates at initialisation (makes sense right)
-        all_params = lasagne.layers.get_all_params(output_layer)
-        self.updates = update_rule(self.loss_train, all_params, learning_rate)
+        self.all_params = lasagne.layers.get_all_params(output_layer)
+        self.updates = update_rule(self.loss_train, self.all_params, 
+                learning_rate)
 
         # initialise empty channels list
         self.channels = {}
@@ -166,10 +167,16 @@ class Expressions:
         self.update_L2 = sum(T.sum(p**2) for p in self.updates)
         # take ratio:
         self.update_ratio = self.L2/self.update_L2
+
+        # adding another channel that is the norm of the ratio of each update 
+        # to it's parameter
+        self.update_ratios = [param/self.updates[param] for param in 
+                self.all_params]
+        self.ratio_of_updates = sum(T.sum(p**2) for p in self.update_ratios)
         
         # make channel with the ratio of these (from train channel)
         iter_train = theano.function([self.batch_index], 
-                [self.loss_train, self.accuracy, self.update_ratio], 
+                [self.loss_train, self.accuracy, self.update_ratio, self.ratio_of_updates], 
                 updates=self.updates,
                 givens={
                     self.X_batch: self.dataset['X_train'][self.batch_slice],
@@ -178,12 +185,11 @@ class Expressions:
         )
 
         self.channels['train'] = {
-            "names":("Train Loss","Train Accuracy", "Update Norm Ratio"),
+            "names":("Train Loss","Train Accuracy", "Update Norm Ratio", "Norm of Update Ratios"),
             "dataset": "Train",
             "eval": iter_train,
-            "dimensions": ['Loss', 'Accuracy', 'L2/Update L2']
+            "dimensions": ['Loss', 'Accuracy', 'L2/Update L2', 'L2(param/update)']
             }
-
 
 def enforce_shared(dataset):
     """
