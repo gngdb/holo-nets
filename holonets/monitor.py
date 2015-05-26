@@ -186,6 +186,31 @@ class Expressions:
                 "dimensions": ['Loss', 'Accuracy']
                 }
 
+    def loss(self, dataset, deterministic):
+        """
+        Builds a channel specification for loss, given a dataset on which to 
+        monitor it. If deterministic is true, noise or dropout will not be 
+        applied.
+        """
+
+    def accuracy(self, dataset):
+        """
+        Builds a channel specification for accuracy, given a dataset on which
+        to monitor it. If deterministic is true, noise or dropout will not be 
+        applied.
+        """
+
+    def update_ratio(self):
+        """
+        Builds channel specification for monitoring update ratios.
+        """
+
+    def L2_norms(self, layer_name, dataset):
+        """
+        Builds channel specifications for monitoring parameter L2 norms.
+        """
+
+
     def add_dropout_channels(self):
         """
         Monitor the validation accuracy and loss with dropout.
