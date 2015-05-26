@@ -46,7 +46,7 @@ class Expressions:
         self.batch_slice = slice(self.batch_index*batch_size,
                                 (self.batch_index+1)*batch_size)
         self.X_batch = X_tensor_type('X')
-        self.y_batch = T.ivector('y')
+        self.y_batch = y_tensor_type('y')
 
         # set up the objective
         self.objective = lasagne.objectives.Objective(self.output_layer, 
