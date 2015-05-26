@@ -12,6 +12,7 @@ import theano
 import theano.tensor as T
 import time
 
+
 class Expressions:
     """
     Function to return channels to be monitored for the train module.
