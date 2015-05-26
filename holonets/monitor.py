@@ -192,8 +192,7 @@ def enforce_shared(dataset, X_tensor_type, y_tensor_type):
     variables.
     """
     for X_name in [n for n in dataset.keys() if 'X' in n]:
-        if not isinstance(dataset[X_name], 
-                theano.sandbox.cuda.var.CudaNdarraySharedVariable):
+        if not issharedvar(dataset[X_name]):
             dataset[X_name] = theano.shared(
                     lasagne.utils.floatX(dataset[X_name]))
     for y_name in [n for n in dataset.keys() if 'y' in n]:
@@ -201,11 +200,17 @@ def enforce_shared(dataset, X_tensor_type, y_tensor_type):
             if not isinstance(dataset[y_name], T.TensorVariable):
                 dataset[y_name] = T.cast(dataset[y_name].ravel(), 'int32')
         else:
-            if not isinstance(dataset[y_name], 
-                    theano.sandbox.cuda.var.CudaNdarraySharedVariable):
+            if not issharedvar(dataset[y_name]):
                 dataset[y_name] = theano.shared(
                         lasagne.utils.floatX(dataset[y_name]))
     return dataset
+
+def issharedvar(var):
+    """
+    Returns true if a variable is a Theano shared variable. Crude hack.
+    """
+    return isinstance(var, theano.sandbox.cuda.var.CudaNdarraySharedVariable) \
+            or isinstance(var, theano.tensor.sharedvar.TensorSharedVariable)
 
 class Timer:
     """
