@@ -70,7 +70,7 @@ class Expressions:
         self.updates = update_rule(self.loss_train, self.all_params, 
                 learning_rate)
 
-        # initialise empty channels list
+        # initialise empty channels dictionary
         self.channels = {}
 
         # add timer channel
@@ -79,7 +79,10 @@ class Expressions:
                 "dataset": "None",
                 "eval": Timer(),
                 "dimensions": ['seconds']
-            } 
+            }
+
+        # initialise empty channel specifications dictionary
+        self.channel_specs = {}
 
     def add_channel(self, name, dimension, expression, function):
         """
@@ -95,6 +98,14 @@ class Expressions:
                 * "test" : test function
                 * "none" : assume expression can be evaluated by itself
         """
+        # sort into appropriate dictionary
+        if not self.channel_specs.get(function, False):
+            self.channel_specs[function] = {}
+        self.channel_specs[function][name] = dict(
+                dimension=dimension,
+                expression=expression,
+                function=function
+                )
 
     def build_channels(self):
         """
@@ -102,7 +113,39 @@ class Expressions:
         module. Compiles the specification contained in self.channel_specs
         into various Theano functions.
         """
-        self.add_default_channels()
+        # take the channel specs and compile functions for train, valid and 
+        # test where required, then add to channels dictionary to return
+        self.iter_funcs = {}
+        for function in ['train', 'valid', 'test']:
+            if self.channel_specs.get(function, False):
+                # extract specifications into lists
+                expressions = []
+                names = []
+                dimensions = []
+                functions = []
+                for name in self.channel_specs[function]:
+                    expressions.append(
+                        self.channel_specs[function][name]['expression'])
+                    names.append(name)
+                    dimensions.append(
+                        self.channel_specs[function][name]['dimension'])
+                # now compile theano function
+                self.iter_funcs[function] = theano.function(
+                        [self.batch_index],
+                        expressions,
+                        updates=self.updates,
+                        givens={
+                            self.X_batch: self.dataset['X_train'][self.batch_slice],
+                            self.y_batch: self.dataset['y_train'][self.batch_slice],
+                        } 
+                        )
+                # and add this to the channels dictionary
+                self.channels[function] = dict(
+                        names=tuple(names),
+                        dataset=function,
+                        eval=self.iter_funcs[function],
+                        dimensions=dimensions
+                        )
 
         return self.channels.values()
     
