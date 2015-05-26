@@ -18,10 +18,10 @@ class Expressions:
     Input:
         - output_layer - final layer of a Lasagne network.
         - dataset - dataset as a dictionary of shared variables:
-            - "X_train" - tensor
-            - "y_train" - ivector 
-            - "X_valid" - tensor
-            - "y_valid" - ivector
+            - "X_train" - of type X_tensor_type
+            - "y_train" - y_tensor_type
+            - "X_valid" - X_tensor_type
+            - "y_valid" - y_tensor_type
         - batch_size - number of examples in each batch
         - update_rule - lasagne update rule to use 
         - X_tensor_type - type of tensor to use for X
@@ -32,11 +32,12 @@ class Expressions:
     def __init__(self, output_layer, dataset, batch_size=128, 
             update_rule=lasagne.updates.adadelta,
             X_tensor_type=T.matrix,
+            y_tensor_type=T.ivector,
             loss_function=lasagne.objectives.categorical_crossentropy,
             deterministic=False,
             learning_rate=0.1):
         self.output_layer = output_layer
-        self.dataset = enforce_shared(dataset)
+        self.dataset = enforce_shared(dataset, X_tensor_type, y_tensor_type)
         self.batch_size = batch_size
         self.update_rule = update_rule
 
@@ -184,7 +185,7 @@ class Expressions:
             "dimensions": ['Loss', 'Accuracy', 'update/param', 'sigma(update/param)']
             }
 
-def enforce_shared(dataset):
+def enforce_shared(dataset, X_tensor_type, y_tensor_type):
     """
     Datasets as dictionaries containing numpy arrays and those containing
     shared variables will both be returned as dictionaries containing shared
@@ -196,8 +197,14 @@ def enforce_shared(dataset):
             dataset[X_name] = theano.shared(
                     lasagne.utils.floatX(dataset[X_name]))
     for y_name in [n for n in dataset.keys() if 'y' in n]:
-        if not isinstance(dataset[y_name], T.TensorVariable):
-            dataset[y_name] = T.cast(dataset[y_name].ravel(), 'int32')
+        if y_tensor_type == T.ivector:
+            if not isinstance(dataset[y_name], T.TensorVariable):
+                dataset[y_name] = T.cast(dataset[y_name].ravel(), 'int32')
+        else:
+            if not isinstance(dataset[y_name], 
+                    theano.sandbox.cuda.var.CudaNdarraySharedVariable):
+                dataset[y_name] = theano.shared(
+                        lasagne.utils.floatX(dataset[y_name]))
     return dataset
 
 class Timer:
