@@ -81,11 +81,26 @@ class Expressions:
                 "dimensions": ['seconds']
             } 
 
+    def add_channel(self, name, dimension, expression, function):
+        """
+        For adding channels, requires the following:
+            - name: name for the channel
+            - dimension: dimension the output value will have
+            - expression: Theano expression to be evaluated, or just a function
+        to return a value when called (in the case of non-Theano channels).
+            - function: which function to compile the expression as part of, 
+        one of:
+                * "train": training function
+                * "valid": validation function
+                * "test" : test function
+                * "none" : assume expression can be evaluated by itself
+        """
 
     def build_channels(self):
         """
         Returns a list of dictionaries that can be passed to the train
-        module.
+        module. Compiles the specification contained in self.channel_specs
+        into various Theano functions.
         """
         self.add_default_channels()
 
