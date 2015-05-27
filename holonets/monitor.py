@@ -59,11 +59,7 @@ class Expressions:
                 target=self.y_batch,
                 deterministic=True)
 
-        self.pred = T.argmax(
-            self.output_layer.get_output(self.X_batch, 
-                deterministic=True), axis=1)
-        self.accuracy = T.mean(T.eq(self.pred, self.y_batch), 
-                dtype=theano.config.floatX)
+
     
         # build initial list of updates at initialisation (makes sense right)
         self.all_params = lasagne.layers.get_all_params(output_layer)
@@ -193,12 +189,35 @@ class Expressions:
         applied.
         """
 
-    def accuracy(self, dataset):
+
+    def accuracy(self, dataset, deterministic, name=None):
         """
         Builds a channel specification for accuracy, given a dataset on which
         to monitor it. If deterministic is true, noise or dropout will not be 
         applied.
+        - dataset: one of "train", "test", "valid"
+        - deterministic: True or False
+
+        If required, also specify custom name.
         """
+        pred = T.argmax(
+            self.output_layer.get_output(self.X_batch, 
+                deterministic=deterministic), axis=1)
+        accuracy = T.mean(T.eq(self.pred, self.y_batch), 
+                dtype=theano.config.floatX)
+        
+        if not name:
+            if deterministic:
+                name="{0} Accuracy".format(dataset)
+            else:
+                name="{0} Accuracy with Dropout".format(dataset)
+
+        return dict(
+                name=name,
+                function=dataset,
+                expression=accuracy,
+                dimension="Accuracy"
+                )
 
     def update_ratio(self):
         """
