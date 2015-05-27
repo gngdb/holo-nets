@@ -7,9 +7,9 @@ class Train:
     Iterator class that runs theano functions over data while gathering
     the resulting monitoring values for plotting.
     """
-    def __init__(self, channels, n_batches={'Train':1, 
-                                            'Validation':1, 
-                                            'Test':1}):
+    def __init__(self, channels, n_batches={'train':1, 
+                                            'valid':1, 
+                                            'test':1}):
         """
         Channels are passed as list or tuple "channels" of dictionaries.
         Expecting each channel as a dictionary with the following entries:
@@ -41,7 +41,7 @@ class Train:
     def next(self):
         self.collected_channels = {}
         # iterate over train, validation and test channels:
-        for dataset_name in ['Train', 'Validation', 'Test']:
+        for dataset_name in ['train', 'valid', 'test']:
             # gather right channels for this dataset
             channels = [channel for channel in self.channels 
                     if channel['dataset'] == dataset_name]
