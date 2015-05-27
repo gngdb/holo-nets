@@ -216,36 +216,6 @@ class Expressions:
         Builds channel specifications for monitoring parameter L2 norms.
         """
 
-
-    def add_dropout_channels(self):
-        """
-        Monitor the validation accuracy and loss with dropout.
-        """
-        # accuracy with dropout
-        self.dropout_pred = T.argmax(
-            self.output_layer.get_output(self.X_batch, 
-                deterministic=False), axis=1)
-        self.dropout_accuracy = T.mean(T.eq(self.dropout_pred, self.y_batch), 
-                dtype=theano.config.floatX)
-
-        iter_valid = theano.function([self.batch_index], 
-                [self.loss_eval, self.accuracy, 
-                    self.loss_train, self.dropout_accuracy],
-                givens={
-                    self.X_batch: self.dataset['X_valid'][self.batch_slice],
-                    self.y_batch: self.dataset['y_valid'][self.batch_slice],
-                },
-        )
-
-        self.channels['validation'] = {
-            "names":("Validation Loss","Validation Accuracy",
-                "Validation Loss with Dropout", 
-                "Validation Accuracy with Dropout"),
-            "dataset": "Validation",
-            "eval": iter_valid,
-            "dimensions": ['Loss', 'Accuracy', 'Loss', 'Accuracy']
-        }
-
     def add_update_ratio_channel(self):
         """
         Crudely add a channel monitoring the global ratio of update norm to 
