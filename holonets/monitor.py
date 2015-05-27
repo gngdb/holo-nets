@@ -210,11 +210,24 @@ class Expressions:
         """
         Builds channel specification for monitoring update ratios.
         """
+        self.update_ratios = [T.abs_((self.updates[param]-param)/param) 
+                for param in self.all_params]
+        self.mean_update_ratio = sum(T.mean(p) 
+                for p in self.update_ratios)/len(self.update_ratios)
+        
+        return dict(
+                name=name,
+                function="train",
+                expression=self.mean_update_ratio,
+                dimension="update/param"
+                )
 
     def L2_norms(self, layer_name, dataset):
         """
         Builds channel specifications for monitoring parameter L2 norms.
         """
+        # TODO
+        return NotImplementedError
 
     def add_update_ratio_channel(self):
         """
