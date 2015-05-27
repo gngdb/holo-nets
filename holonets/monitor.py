@@ -11,6 +11,7 @@ import lasagne.regularization
 import theano
 import theano.tensor as T
 import time
+import itertools
 
 
 class Expressions:
@@ -233,6 +234,28 @@ class Expressions:
                 expression=L2,
                 dimension="L2 norm"
                 )
+
+def classification_channels(expressions):
+    """
+    Takes an instance of Expressions and produces a list of channels that 
+    are relevant for a classification experiment.
+
+    Can then be applied to Expressions instance with the add_channel method
+    in a loop:
+    for channel_spec in channel_specs:
+        expressions.add_channel(**channel_spec)
+    """
+    channel_specs = []
+    # loss and accuracywith and without dropout on training and validation
+    for deterministic,dataset in itertools.product([True, False],
+                                                   ["train","valid"]):
+        channel_specs.append(expressions.loss(dataset, deterministic))
+        channel_specs.append(expressions.accuracy(dataset, deterministic))
+    # update ratio
+    channel_specs.append(expressions.update_ratio())
+    # global L2 norm
+    channel_specs.append(expressions.L2())
+    return channel_specs
 
 def enforce_shared(dataset, X_tensor_type, y_tensor_type):
     """
