@@ -145,12 +145,36 @@ class Expressions:
 
         return self.channels.values()
     
-    def loss(self, dataset, deterministic):
+    def loss(self, dataset, deterministic, name=None):
         """
         Builds a channel specification for loss, given a dataset on which to 
         monitor it. If deterministic is true, noise or dropout will not be 
         applied.
+        - dataset: one of "train", "test", "valid"
+        - deterministic: True or False
+
+        If required, also specify custom name.
         """
+        if not name:
+            if deterministic:
+                name="{0} Loss".format(dataset)
+            else:
+                name="{0} Loss with Dropout".format(dataset)
+
+        if deterministic:
+            return dict(
+                    name=name,
+                    function=dataset,
+                    expression=self.loss_eval,
+                    dimension="Loss"
+                    )
+        else:
+            return dict(
+                    name=name,
+                    function=dataset,
+                    expression=self.loss_train,
+                    dimension="Loss"
+                    )
 
 
     def accuracy(self, dataset, deterministic, name=None):
