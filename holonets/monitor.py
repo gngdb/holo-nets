@@ -206,7 +206,7 @@ class Expressions:
                 dimension="Accuracy"
                 )
 
-    def update_ratio(self):
+    def update_ratio(self, name="Mean Update Ratio"):
         """
         Builds channel specification for monitoring update ratios.
         """
