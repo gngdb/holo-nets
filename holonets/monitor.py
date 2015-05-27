@@ -145,43 +145,6 @@ class Expressions:
 
         return self.channels.values()
     
-    def add_default_channels(self):
-        """
-        Checks for and adds default channels, if they've not been made yet.
-        """
-        if not self.channels.get('train', False):
-            iter_train = theano.function([self.batch_index], 
-                    [self.loss_train, self.accuracy], 
-                    updates=self.updates,
-                    givens={
-                        self.X_batch: self.dataset['X_train'][self.batch_slice],
-                        self.y_batch: self.dataset['y_train'][self.batch_slice],
-                    },
-            )
-
-            self.channels['train'] = {
-                "names":("Train Loss","Train Accuracy"),
-                "dataset": "Train",
-                "eval": iter_train,
-                "dimensions": ['Loss', 'Accuracy']
-                }
-
-        if not self.channels.get('validation', False):
-            iter_valid  = theano.function([self.batch_index], 
-                    [self.loss_eval, self.accuracy],
-                    givens={
-                        self.X_batch: self.dataset['X_valid'][self.batch_slice],
-                        self.y_batch: self.dataset['y_valid'][self.batch_slice],
-                    },
-            )
-
-            self.channels['validation'] = {
-                "names":("Validation Loss","Validation Accuracy"),
-                "dataset": "Validation",
-                "eval": iter_valid,
-                "dimensions": ['Loss', 'Accuracy']
-                }
-
     def loss(self, dataset, deterministic):
         """
         Builds a channel specification for loss, given a dataset on which to 
