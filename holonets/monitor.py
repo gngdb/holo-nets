@@ -229,35 +229,6 @@ class Expressions:
         # TODO
         return NotImplementedError
 
-    def add_update_ratio_channel(self):
-        """
-        Crudely add a channel monitoring the global ratio of update norm to 
-        parameter norm.
-        """
-        self.update_ratios = [T.abs_((self.updates[param]-param)/param) 
-                for param in self.all_params]
-        self.mean_update_ratio = sum(T.mean(p) 
-                for p in self.update_ratios)/len(self.update_ratios)
-        self.sigma_update_ratio = sum(T.sqrt(T.var(p)) 
-                for p in self.update_ratios)/len(self.update_ratios)
-
-        # make channel with the ratio of these (from train channel)
-        iter_train = theano.function([self.batch_index], 
-                [self.loss_train, self.accuracy, self.mean_update_ratio, self.sigma_update_ratio], 
-                updates=self.updates,
-                givens={
-                    self.X_batch: self.dataset['X_train'][self.batch_slice],
-                    self.y_batch: self.dataset['y_train'][self.batch_slice],
-                },
-        )
-
-        self.channels['train'] = {
-            "names":("Train Loss","Train Accuracy", "Mean Update Ratio", "Sigma Update Ratio"),
-            "dataset": "Train",
-            "eval": iter_train,
-            "dimensions": ['Loss', 'Accuracy', 'update/param', 'sigma(update/param)']
-            }
-
 def enforce_shared(dataset, X_tensor_type, y_tensor_type):
     """
     Datasets as dictionaries containing numpy arrays and those containing
