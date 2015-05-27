@@ -222,12 +222,17 @@ class Expressions:
                 dimension="update/param"
                 )
 
-    def L2_norms(self, layer_name, dataset):
+    def L2(self, name="Parameters L2"):
         """
-        Builds channel specifications for monitoring parameter L2 norms.
+        Global L2 channel for parameters.
         """
-        # TODO
-        return NotImplementedError
+        L2 = sum(T.sum(p**2) for p in self.all_params)
+        return dict(
+                name=name,
+                function="train",
+                expression=L2,
+                dimension="L2 norm"
+                )
 
 def enforce_shared(dataset, X_tensor_type, y_tensor_type):
     """
