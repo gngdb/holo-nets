@@ -60,8 +60,6 @@ class Expressions:
                 target=self.y_batch,
                 deterministic=True)
 
-
-    
         # build initial list of updates at initialisation (makes sense right)
         self.all_params = lasagne.layers.get_all_params(output_layer)
         self.updates = update_rule(self.loss_train, self.all_params, 
