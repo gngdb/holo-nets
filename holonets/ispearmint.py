@@ -5,6 +5,7 @@
 import spearmint.main
 import holoviews as hv
 import numpy as np
+import itertools
 
 def make_holomap(experiment_name):
     """
@@ -48,3 +49,36 @@ def best(experiment_name):
         best[param] = bestjob['params'][param]['values'][0]
     best['id'] = bestjob['id']
     return best
+
+def scatter_layout(traces, heat="Best Loss"):
+    """
+    Takes a holomap of traces and turns it into a set of scatter heatmaps 
+    between each pair of parameters. Cell must be run with:
+
+    %%opts Points [color_index=2]
+    """
+    heatmaps = []
+    params = [k for k in traces.keys() if k != heat]
+    for p in itertools.combinations(params, 2):
+        d = np.array([traces[p[0]].data[:,1],
+                      traces[p[1]].data[:,1],
+                      traces[heat].data[:,1]]).T
+        heatmaps.append(
+                hv.Points(d, key_dimensions=[p[0], p[1]], 
+                    value_dimensions=[heat])
+                )
+    return hv.Layout(heatmaps)
+
+def bars(traces, target='Best Loss'):
+    hm = hv.HoloMap(key_dimensions=[target])
+    params = [k for k in traces.keys() if k != target]   
+    sample_arrays = []
+    for p in params:
+        # turn holomap into arrays:
+        sample_arrays.append(traces[p].data[:,1])
+    data = np.array(sample_arrays).T
+    for r,t in zip(data, traces[target].data[:,1]):
+        bardata = [(p,v) for v,p in zip(r,params)]
+        hm[t] = hv.Bars(bardata, key_dimensions=['Parameters'], 
+                value_dimensions=['Values'])
+    return hm
