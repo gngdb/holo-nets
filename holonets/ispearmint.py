@@ -42,7 +42,8 @@ def best(experiment_name):
     """
     db = spearmint.main.MongoDB()
     jobs = spearmint.main.load_jobs(db, experiment_name)
-    sortedjobs = sorted(jobs, key=lambda j: j.get('values',{'main':1.0}).values()[0])
+    sortedjobs = sorted(jobs, key=lambda j: 
+            j.get('values',{'main':100.0}).values()[0])
     bestjob = sortedjobs[0]
     best = dict(target=bestjob['values']['main'])
     for param in bestjob['params']:
