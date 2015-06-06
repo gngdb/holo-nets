@@ -125,13 +125,17 @@ class Expressions:
                     dimensions.append(
                         self.channel_specs[function][name]['dimension'])
                 # now compile theano function
+                if function == 'train':
+                    updates = self.updates
+                else:
+                    updates = {}
                 self.iter_funcs[function] = theano.function(
                         [self.batch_index],
                         expressions,
-                        updates=self.updates,
+                        updates=updates,
                         givens={
-                            self.X_batch: self.dataset['X_train'][self.batch_slice],
-                            self.y_batch: self.dataset['y_train'][self.batch_slice],
+                            self.X_batch: self.dataset['X_'+function][self.batch_slice],
+                            self.y_batch: self.dataset['y_'+function][self.batch_slice],
                         } 
                         )
                 # and add this to the channels dictionary
@@ -186,7 +190,7 @@ class Expressions:
 
         If required, also specify custom name.
         """
-        pred = T.argmax(
+        self.pred = T.argmax(
             self.output_layer.get_output(self.X_batch, 
                 deterministic=deterministic), axis=1)
         accuracy = T.mean(T.eq(self.pred, self.y_batch), 
@@ -244,7 +248,7 @@ def classification_channels(expressions):
         expressions.add_channel(**channel_spec)
     """
     channel_specs = []
-    # loss and accuracywith and without dropout on training and validation
+    # loss and accuracy with and without dropout on training and validation
     for deterministic,dataset in itertools.product([True, False],
                                                    ["train","valid"]):
         channel_specs.append(expressions.loss(dataset, deterministic))
