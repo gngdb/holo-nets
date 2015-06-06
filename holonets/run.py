@@ -50,6 +50,8 @@ class EpochLoop:
         # turn the dictionary into a HoloMap
         if self.make_holomap:
             results = self._make_holomap(self.results)
+        else:
+            results = self.results
         
         return results
 
