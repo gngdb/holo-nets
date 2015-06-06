@@ -9,7 +9,8 @@ class Train:
     """
     def __init__(self, channels, n_batches={'train':1, 
                                             'valid':1, 
-                                            'test':1}):
+                                            'test':1},
+                    accumulate='mean'):
         """
         Channels are passed as list or tuple "channels" of dictionaries.
         Expecting each channel as a dictionary with the following entries:
@@ -34,6 +35,7 @@ class Train:
         
         # store channels
         self.channels = channels
+        self.accumulate = accumulate
 
     def __iter__(self):
         return self
@@ -58,10 +60,11 @@ class Train:
                                 self.collected_channels[name] = []
                             self.collected_channels[name].append(rval)
                 # take the mean over this epoch for each channel
-                for channel in channels:
-                    for name in channel['names']:
-                        self.collected_channels[name] = \
-                                np.mean(self.collected_channels[name])
+                if accumulate=='mean':
+                    for channel in channels:
+                        for name in channel['names']:
+                            self.collected_channels[name] = \
+                                    np.mean(self.collected_channels[name])
         # finally, gather the independent channels
         channels = [channel for channel in self.channels 
                     if channel['dataset'] == 'None']
