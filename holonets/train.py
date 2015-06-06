@@ -60,7 +60,7 @@ class Train:
                                 self.collected_channels[name] = []
                             self.collected_channels[name].append(rval)
                 # take the mean over this epoch for each channel
-                if accumulate=='mean':
+                if self.accumulate=='mean':
                     for channel in channels:
                         for name in channel['names']:
                             self.collected_channels[name] = \
