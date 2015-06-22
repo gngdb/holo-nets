@@ -36,6 +36,7 @@ class Expressions:
             X_tensor_type=T.matrix,
             y_tensor_type=T.ivector,
             loss_function=lasagne.objectives.categorical_crossentropy,
+            loss_aggregate=T.mean,
             deterministic=False,
             learning_rate=0.1):
         self.output_layer = output_layer
@@ -51,14 +52,13 @@ class Expressions:
         self.y_batch = y_tensor_type('y')
 
         # set up the objective
-        self.objective = lasagne.objectives.Objective(self.output_layer, 
-                loss_function=loss_function)
-        self.loss_train = self.objective.get_loss(self.X_batch, 
-                target=self.y_batch, 
-                deterministic=deterministic)
-        self.loss_eval = self.objective.get_loss(self.X_batch, 
-                target=self.y_batch,
-                deterministic=True)
+        network_output = lasagne.layers.get_output(output_layer, self.X_batch)
+        deterministic_output = lasagne.layers.get_output(output_layer, 
+            self.X_batch, deterministic=True)
+        self.loss_train = loss_aggregate(loss_function(network_output, 
+            self.y_batch))
+        self.loss_eval = loss_aggregate(loss_function(deterministic_output, 
+            self.y_batch))
 
         # build initial list of updates at initialisation (makes sense right)
         self.all_params = lasagne.layers.get_all_params(output_layer)
