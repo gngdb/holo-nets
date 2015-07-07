@@ -299,4 +299,3 @@ class Timer:
         self.now = time.time()
         return self.now - self.then
 
-
