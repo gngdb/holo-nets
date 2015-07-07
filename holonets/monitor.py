@@ -52,10 +52,11 @@ class Expressions:
         self.y_batch = y_tensor_type('y')
 
         # set up the objective
-        network_output = lasagne.layers.get_output(output_layer, self.X_batch)
+        self.network_output = lasagne.layers.get_output(output_layer, 
+                self.X_batch)
         deterministic_output = lasagne.layers.get_output(output_layer, 
             self.X_batch, deterministic=True)
-        self.loss_train = loss_aggregate(loss_function(network_output, 
+        self.loss_train = loss_aggregate(loss_function(self.network_output, 
             self.y_batch))
         self.loss_eval = loss_aggregate(loss_function(deterministic_output, 
             self.y_batch))
