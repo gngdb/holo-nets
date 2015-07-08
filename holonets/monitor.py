@@ -30,6 +30,8 @@ class Expressions:
         - loss_function - loss function to use
         - deterministic - disable all stochastic elements
         - learning_rate - learning rate to use
+        - regularisation - regularisation function to apply (for
+        lasagne.regularization.l2)
     """
     def __init__(self, output_layer, dataset, batch_size=128, 
             update_rule=lasagne.updates.adadelta,
@@ -38,7 +40,8 @@ class Expressions:
             loss_function=lasagne.objectives.categorical_crossentropy,
             loss_aggregate=T.mean,
             deterministic=False,
-            learning_rate=0.1):
+            learning_rate=0.1,
+            regularisation=lambda x: 0.):
         self.output_layer = output_layer
         self.dataset = enforce_shared(dataset, X_tensor_type, y_tensor_type)
         self.batch_size = batch_size
@@ -57,9 +60,9 @@ class Expressions:
         deterministic_output = lasagne.layers.get_output(output_layer, 
             self.X_batch, deterministic=True)
         self.loss_train = loss_aggregate(loss_function(self.network_output, 
-            self.y_batch))
+            self.y_batch)) + regularisation(self.output_layer)
         self.loss_eval = loss_aggregate(loss_function(deterministic_output, 
-            self.y_batch))
+            self.y_batch)) + regularisation(self.output_layer)
 
         # build initial list of updates at initialisation (makes sense right)
         self.all_params = lasagne.layers.get_all_params(output_layer)
