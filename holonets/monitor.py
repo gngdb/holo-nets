@@ -55,14 +55,15 @@ class Expressions:
         self.y_batch = y_tensor_type('y')
 
         # set up the objective
-        self.network_output = lasagne.layers.get_output(output_layer, 
+        self.network_output = lasagne.layers.get_output(self.output_layer, 
                 self.X_batch)
-        deterministic_output = lasagne.layers.get_output(output_layer, 
+        deterministic_output = lasagne.layers.get_output(self.output_layer, 
             self.X_batch, deterministic=True)
+        all_params = lasagne.layers.get_all_params(self.output_layer)
         self.loss_train = loss_aggregate(loss_function(self.network_output, 
-            self.y_batch)) + regularisation(self.output_layer)
+            self.y_batch)) + sum([regularisation(p) for p in all_params])
         self.loss_eval = loss_aggregate(loss_function(deterministic_output, 
-            self.y_batch)) + regularisation(self.output_layer)
+            self.y_batch)) + sum([regularisation(p) for p in all_params])
 
         # build initial list of updates at initialisation (makes sense right)
         self.all_params = lasagne.layers.get_all_params(output_layer)
