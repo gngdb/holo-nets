@@ -7,7 +7,7 @@ class EpochLoop:
     """
     Runs a loop over a train object for a given number of epochs.
     """
-    def __init__(self, train, dimensions={}):
+    def __init__(self, train, dimensions={}, make_holomap=True):
         """
         Initialisation arguments:
         - train - training iterator object. Assuming this returns a dictionary
@@ -19,6 +19,7 @@ class EpochLoop:
         self.dimensions = dimensions
         self.i = 0
         self.results = {}
+        self.make_holomap = make_holomap
 
     def run(self, N_epochs, verbose=False):
         """
@@ -47,9 +48,12 @@ class EpochLoop:
                 break
 
         # turn the dictionary into a HoloMap
-        holo_results = self._make_holomap(self.results)
+        if self.make_holomap:
+            results = self._make_holomap(self.results)
+        else:
+            results = self.results
         
-        return holo_results
+        return results
 
     def _make_holomap(self, dict):
         """

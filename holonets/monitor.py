@@ -11,6 +11,7 @@ import lasagne.regularization
 import theano
 import theano.tensor as T
 import time
+import itertools
 
 
 class Expressions:
@@ -29,14 +30,18 @@ class Expressions:
         - loss_function - loss function to use
         - deterministic - disable all stochastic elements
         - learning_rate - learning rate to use
+        - regularisation - regularisation function to apply (for
+        lasagne.regularization.l2)
     """
     def __init__(self, output_layer, dataset, batch_size=128, 
             update_rule=lasagne.updates.adadelta,
             X_tensor_type=T.matrix,
             y_tensor_type=T.ivector,
             loss_function=lasagne.objectives.categorical_crossentropy,
+            loss_aggregate=T.mean,
             deterministic=False,
-            learning_rate=0.1):
+            learning_rate=0.1,
+            regularisation=lambda x: 0.):
         self.output_layer = output_layer
         self.dataset = enforce_shared(dataset, X_tensor_type, y_tensor_type)
         self.batch_size = batch_size
@@ -50,27 +55,22 @@ class Expressions:
         self.y_batch = y_tensor_type('y')
 
         # set up the objective
-        self.objective = lasagne.objectives.Objective(self.output_layer, 
-                loss_function=loss_function)
-        self.loss_train = self.objective.get_loss(self.X_batch, 
-                target=self.y_batch, 
-                deterministic=deterministic)
-        self.loss_eval = self.objective.get_loss(self.X_batch, 
-                target=self.y_batch,
-                deterministic=True)
+        self.network_output = lasagne.layers.get_output(self.output_layer, 
+                self.X_batch)
+        self.deterministic_output = lasagne.layers.get_output(self.output_layer,
+            self.X_batch, deterministic=True)
+        all_params = lasagne.layers.get_all_params(self.output_layer)
+        self.loss_train = loss_aggregate(loss_function(self.network_output, 
+            self.y_batch)) + sum([regularisation(p) for p in all_params])
+        self.loss_eval = loss_aggregate(loss_function(self.deterministic_output,
+            self.y_batch)) + sum([regularisation(p) for p in all_params])
 
-        self.pred = T.argmax(
-            self.output_layer.get_output(self.X_batch, 
-                deterministic=True), axis=1)
-        self.accuracy = T.mean(T.eq(self.pred, self.y_batch), 
-                dtype=theano.config.floatX)
-    
         # build initial list of updates at initialisation (makes sense right)
         self.all_params = lasagne.layers.get_all_params(output_layer)
         self.updates = update_rule(self.loss_train, self.all_params, 
                 learning_rate)
 
-        # initialise empty channels list
+        # initialise empty channels dictionary
         self.channels = {}
 
         # add timer channel
@@ -79,112 +79,190 @@ class Expressions:
                 "dataset": "None",
                 "eval": Timer(),
                 "dimensions": ['seconds']
-            } 
+            }
 
+        # initialise empty channel specifications dictionary
+        self.channel_specs = {}
+
+    def add_channel(self, name, dimension, expression, function):
+        """
+        For adding channels, requires the following:
+            - name: name for the channel
+            - dimension: dimension the output value will have
+            - expression: Theano expression to be evaluated, or just a function
+        to return a value when called (in the case of non-Theano channels).
+            - function: which function to compile the expression as part of, 
+        one of:
+                * "train": training function
+                * "valid": validation function
+                * "test" : test function
+                * "none" : assume expression can be evaluated by itself
+        """
+        # sort into appropriate dictionary
+        if not self.channel_specs.get(function, False):
+            self.channel_specs[function] = {}
+        self.channel_specs[function][name] = dict(
+                dimension=dimension,
+                expression=expression,
+                function=function
+                )
 
     def build_channels(self):
         """
         Returns a list of dictionaries that can be passed to the train
-        module.
+        module. Compiles the specification contained in self.channel_specs
+        into various Theano functions.
         """
-        self.add_default_channels()
+        # take the channel specs and compile functions for train, valid and 
+        # test where required, then add to channels dictionary to return
+        self.iter_funcs = {}
+        for function in ['train', 'valid', 'test']:
+            if self.channel_specs.get(function, False):
+                # extract specifications into lists
+                expressions = []
+                names = []
+                dimensions = []
+                functions = []
+                for name in self.channel_specs[function]:
+                    expressions.append(
+                        self.channel_specs[function][name]['expression'])
+                    names.append(name)
+                    dimensions.append(
+                        self.channel_specs[function][name]['dimension'])
+                # now compile theano function
+                if function == 'train':
+                    updates = self.updates
+                else:
+                    updates = {}
+                self.iter_funcs[function] = theano.function(
+                        [self.batch_index],
+                        expressions,
+                        updates=updates,
+                        givens={
+                            self.X_batch: self.dataset['X_'+function][self.batch_slice],
+                            self.y_batch: self.dataset['y_'+function][self.batch_slice],
+                        } 
+                        )
+                # and add this to the channels dictionary
+                self.channels[function] = dict(
+                        names=tuple(names),
+                        dataset=function,
+                        eval=self.iter_funcs[function],
+                        dimensions=dimensions
+                        )
 
         return self.channels.values()
     
-    def add_default_channels(self):
+    def loss(self, dataset, deterministic, name=None):
         """
-        Checks for and adds default channels, if they've not been made yet.
+        Builds a channel specification for loss, given a dataset on which to 
+        monitor it. If deterministic is true, noise or dropout will not be 
+        applied.
+        - dataset: one of "train", "test", "valid"
+        - deterministic: True or False
+
+        If required, also specify custom name.
         """
-        if not self.channels.get('train', False):
-            iter_train = theano.function([self.batch_index], 
-                    [self.loss_train, self.accuracy], 
-                    updates=self.updates,
-                    givens={
-                        self.X_batch: self.dataset['X_train'][self.batch_slice],
-                        self.y_batch: self.dataset['y_train'][self.batch_slice],
-                    },
-            )
+        if not name:
+            if deterministic:
+                name="{0} Loss".format(dataset)
+            else:
+                name="{0} Loss with Dropout".format(dataset)
 
-            self.channels['train'] = {
-                "names":("Train Loss","Train Accuracy"),
-                "dataset": "Train",
-                "eval": iter_train,
-                "dimensions": ['Loss', 'Accuracy']
-                }
+        if deterministic:
+            return dict(
+                    name=name,
+                    function=dataset,
+                    expression=self.loss_eval,
+                    dimension="Loss"
+                    )
+        else:
+            return dict(
+                    name=name,
+                    function=dataset,
+                    expression=self.loss_train,
+                    dimension="Loss"
+                    )
 
-        if not self.channels.get('validation', False):
-            iter_valid  = theano.function([self.batch_index], 
-                    [self.loss_eval, self.accuracy],
-                    givens={
-                        self.X_batch: self.dataset['X_valid'][self.batch_slice],
-                        self.y_batch: self.dataset['y_valid'][self.batch_slice],
-                    },
-            )
 
-            self.channels['validation'] = {
-                "names":("Validation Loss","Validation Accuracy"),
-                "dataset": "Validation",
-                "eval": iter_valid,
-                "dimensions": ['Loss', 'Accuracy']
-                }
-
-    def add_dropout_channels(self):
+    def accuracy(self, dataset, deterministic, name=None):
         """
-        Monitor the validation accuracy and loss with dropout.
+        Builds a channel specification for accuracy, given a dataset on which
+        to monitor it. If deterministic is true, noise or dropout will not be 
+        applied.
+        - dataset: one of "train", "test", "valid"
+        - deterministic: True or False
+
+        If required, also specify custom name.
         """
-        # accuracy with dropout
-        self.dropout_pred = T.argmax(
+        self.pred = T.argmax(
             self.output_layer.get_output(self.X_batch, 
-                deterministic=False), axis=1)
-        self.dropout_accuracy = T.mean(T.eq(self.dropout_pred, self.y_batch), 
+                deterministic=deterministic), axis=1)
+        accuracy = T.mean(T.eq(self.pred, self.y_batch), 
                 dtype=theano.config.floatX)
+        
+        if not name:
+            if deterministic:
+                name="{0} Accuracy".format(dataset)
+            else:
+                name="{0} Accuracy with Dropout".format(dataset)
 
-        iter_valid = theano.function([self.batch_index], 
-                [self.loss_eval, self.accuracy, 
-                    self.loss_train, self.dropout_accuracy],
-                givens={
-                    self.X_batch: self.dataset['X_valid'][self.batch_slice],
-                    self.y_batch: self.dataset['y_valid'][self.batch_slice],
-                },
-        )
+        return dict(
+                name=name,
+                function=dataset,
+                expression=accuracy,
+                dimension="Accuracy"
+                )
 
-        self.channels['validation'] = {
-            "names":("Validation Loss","Validation Accuracy",
-                "Validation Loss with Dropout", 
-                "Validation Accuracy with Dropout"),
-            "dataset": "Validation",
-            "eval": iter_valid,
-            "dimensions": ['Loss', 'Accuracy', 'Loss', 'Accuracy']
-        }
-
-    def add_update_ratio_channel(self):
+    def update_ratio(self, name="Mean Update Ratio"):
         """
-        Crudely add a channel monitoring the global ratio of update norm to 
-        parameter norm.
+        Builds channel specification for monitoring update ratios.
         """
         self.update_ratios = [T.abs_((self.updates[param]-param)/param) 
                 for param in self.all_params]
         self.mean_update_ratio = sum(T.mean(p) 
                 for p in self.update_ratios)/len(self.update_ratios)
-        self.sigma_update_ratio = sum(T.sqrt(T.var(p)) 
-                for p in self.update_ratios)/len(self.update_ratios)
+        
+        return dict(
+                name=name,
+                function="train",
+                expression=self.mean_update_ratio,
+                dimension="update/param"
+                )
 
-        # make channel with the ratio of these (from train channel)
-        iter_train = theano.function([self.batch_index], 
-                [self.loss_train, self.accuracy, self.mean_update_ratio, self.sigma_update_ratio], 
-                updates=self.updates,
-                givens={
-                    self.X_batch: self.dataset['X_train'][self.batch_slice],
-                    self.y_batch: self.dataset['y_train'][self.batch_slice],
-                },
-        )
+    def L2(self, name="Parameters L2"):
+        """
+        Global L2 channel for parameters.
+        """
+        L2 = sum(T.sum(p**2) for p in self.all_params)
+        return dict(
+                name=name,
+                function="train",
+                expression=L2,
+                dimension="L2 norm"
+                )
 
-        self.channels['train'] = {
-            "names":("Train Loss","Train Accuracy", "Mean Update Ratio", "Sigma Update Ratio"),
-            "dataset": "Train",
-            "eval": iter_train,
-            "dimensions": ['Loss', 'Accuracy', 'update/param', 'sigma(update/param)']
-            }
+def classification_channels(expressions):
+    """
+    Takes an instance of Expressions and produces a list of channels that 
+    are relevant for a classification experiment.
+
+    Can then be applied to Expressions instance with the add_channel method
+    in a loop:
+    for channel_spec in channel_specs:
+        expressions.add_channel(**channel_spec)
+    """
+    channel_specs = []
+    # loss and accuracy with and without dropout on training and validation
+    for deterministic,dataset in itertools.product([True, False],
+                                                   ["train","valid"]):
+        channel_specs.append(expressions.loss(dataset, deterministic))
+        channel_specs.append(expressions.accuracy(dataset, deterministic))
+    # update ratio
+    channel_specs.append(expressions.update_ratio())
+    # global L2 norm
+    channel_specs.append(expressions.L2())
+    return channel_specs
 
 def enforce_shared(dataset, X_tensor_type, y_tensor_type):
     """
@@ -224,5 +302,4 @@ class Timer:
         self.then = self.now
         self.now = time.time()
         return self.now - self.then
-
 

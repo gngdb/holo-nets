@@ -32,13 +32,13 @@ class TestHolonetsTrain(unittest.TestCase):
         # Also, should contain the name of the channel
         self.train_channel = {
                 'names':('Train Channel','Train Channel 2'),
-                'dataset':'Train',
+                'dataset':'train',
                 'eval':fprop_train,
                 'dimensions':['Loss', 'Misc']
         }
         self.test_channel = {
                 'names':('Test Channel',),
-                'dataset':'Test',
+                'dataset':'test',
                 'eval':fprop_test
         }
         self.independent = {
