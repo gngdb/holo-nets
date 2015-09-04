@@ -34,7 +34,7 @@ class Expressions:
         lasagne.regularization.l2)
     """
     def __init__(self, output_layer, dataset, batch_size=128, 
-            update_rule=lasagne.updates.adadelta,
+            update_rule=lasagne.updates.adam,
             X_tensor_type=T.matrix,
             y_tensor_type=T.ivector,
             loss_function=lasagne.objectives.categorical_crossentropy,
@@ -66,7 +66,8 @@ class Expressions:
             self.y_batch)) + sum([regularisation(p) for p in all_params])
 
         # build initial list of updates at initialisation (makes sense right)
-        self.all_params = lasagne.layers.get_all_params(output_layer)
+        self.all_params = lasagne.layers.get_all_params(output_layer, 
+                trainable=True)
         self.updates = update_rule(self.loss_train, self.all_params, 
                 learning_rate)
 
