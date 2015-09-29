@@ -59,14 +59,14 @@ class Expressions:
                 self.X_batch)
         self.deterministic_output = lasagne.layers.get_output(self.output_layer,
             self.X_batch, deterministic=True)
-        all_params = lasagne.layers.get_all_params(self.output_layer)
+        self.all_params = lasagne.layers.get_all_params(self.output_layer)
         self.loss_train = loss_aggregate(loss_function(self.network_output, 
-            self.y_batch)) + sum([regularisation(p) for p in all_params])
+            self.y_batch)) + sum([regularisation(p) for p in self.all_params])
         self.loss_eval = loss_aggregate(loss_function(self.deterministic_output,
-            self.y_batch)) + sum([regularisation(p) for p in all_params])
+            self.y_batch)) + sum([regularisation(p) for p in self.all_params])
 
         # build initial list of updates at initialisation (makes sense right)
-        self.all_params = lasagne.layers.get_all_params(output_layer)
+
         self.updates = update_rule(self.loss_train, self.all_params, 
                 learning_rate)
 
