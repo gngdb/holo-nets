@@ -34,13 +34,13 @@ class Expressions:
         lasagne.regularization.l2)
     """
     def __init__(self, output_layer, dataset, batch_size=128, 
-            update_rule=lasagne.updates.adadelta,
+            update_rule=lasagne.updates.adam,
             X_tensor_type=T.matrix,
             y_tensor_type=T.ivector,
             loss_function=lasagne.objectives.categorical_crossentropy,
             loss_aggregate=T.mean,
             deterministic=False,
-            learning_rate=0.1,
+            learning_rate=0.001,
             regularisation=lambda x: 0.):
         self.output_layer = output_layer
         self.dataset = enforce_shared(dataset, X_tensor_type, y_tensor_type)
