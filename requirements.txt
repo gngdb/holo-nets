@@ -1,2 +1,2 @@
-Theano==0.7
+Theano>=0.7
 git+https://github.com/benanne/Lasagne.git#egg=Lasagne
