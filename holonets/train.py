@@ -7,9 +7,9 @@ class Train:
     Iterator class that runs theano functions over data while gathering
     the resulting monitoring values for plotting.
     """
-    def __init__(self, channels, n_batches={'train':1, 
-                                            'valid':1, 
-                                            'test':1},
+    def __init__(self, channels, n_batches={'train':None, 
+                                            'valid':None, 
+                                            'test':None},
                     accumulate='mean'):
         """
         Channels are passed as list or tuple "channels" of dictionaries.
