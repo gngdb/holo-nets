@@ -51,8 +51,8 @@ class TestHolonetsTrain(unittest.TestCase):
         self.train = holonets.train.Train(
                [self.train_channel, 
                 self.test_channel, 
-                self.independent]
-        )
+                self.independent],
+               n_batches={"train":1, "valid":1, "test":1})
 
     def test_traincall(self):
         """
