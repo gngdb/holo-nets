@@ -32,6 +32,7 @@ class Expressions:
         - learning_rate - learning rate to use
         - regularisation - regularisation function to apply (for
         lasagne.regularization.l2)
+        - extra_loss - arbitrary extra loss function
     """
     def __init__(self, output_layer, dataset, batch_size=128, 
             update_rule=lasagne.updates.adam,
@@ -61,9 +62,11 @@ class Expressions:
             self.X_batch, deterministic=True)
         self.all_params = lasagne.layers.get_all_params(self.output_layer)
         self.loss_train = loss_aggregate(loss_function(self.network_output, 
-            self.y_batch)) + sum([regularisation(p) for p in self.all_params])
+            self.y_batch)) + sum([regularisation(p) for p in self.all_params]) \
+                    + extra_loss
         self.loss_eval = loss_aggregate(loss_function(self.deterministic_output,
-            self.y_batch)) + sum([regularisation(p) for p in self.all_params])
+            self.y_batch)) + sum([regularisation(p) for p in self.all_params]) \
+                    + extra_loss
 
         # build initial list of updates at initialisation (makes sense right)
 
