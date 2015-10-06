@@ -32,6 +32,7 @@ class Expressions:
         - learning_rate - learning rate to use
         - regularisation - regularisation function to apply (for
         lasagne.regularization.l2)
+        - extra_loss - arbitrary extra loss function
     """
     def __init__(self, output_layer, dataset, batch_size=128, 
             update_rule=lasagne.updates.adam,
@@ -41,7 +42,8 @@ class Expressions:
             loss_aggregate=T.mean,
             deterministic=False,
             learning_rate=0.001,
-            regularisation=lambda x: 0.):
+            regularisation=lambda x: 0.,
+            extra_loss=0.):
         self.output_layer = output_layer
         self.dataset = enforce_shared(dataset, X_tensor_type, y_tensor_type)
         self.batch_size = batch_size
@@ -57,13 +59,15 @@ class Expressions:
         # set up the objective
         self.network_output = lasagne.layers.get_output(self.output_layer, 
                 self.X_batch)
-        deterministic_output = lasagne.layers.get_output(self.output_layer, 
+        self.deterministic_output = lasagne.layers.get_output(self.output_layer,
             self.X_batch, deterministic=True)
-        all_params = lasagne.layers.get_all_params(self.output_layer)
+        self.all_params = lasagne.layers.get_all_params(self.output_layer)
         self.loss_train = loss_aggregate(loss_function(self.network_output, 
-            self.y_batch)) + sum([regularisation(p) for p in all_params])
-        self.loss_eval = loss_aggregate(loss_function(deterministic_output, 
-            self.y_batch)) + sum([regularisation(p) for p in all_params])
+            self.y_batch)) + sum([regularisation(p) for p in self.all_params]) \
+                    + extra_loss
+        self.loss_eval = loss_aggregate(loss_function(self.deterministic_output,
+            self.y_batch)) + sum([regularisation(p) for p in self.all_params]) \
+                    + extra_loss
 
         # build initial list of updates at initialisation (makes sense right)
         self.all_params = lasagne.layers.get_all_params(output_layer, 
