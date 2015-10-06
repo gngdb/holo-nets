@@ -19,7 +19,7 @@ Examples:
 """
 
 import pydot
-
+import lasagne.layers
 
 def get_hex_color(layer_type):
     """
@@ -89,7 +89,8 @@ def get_pydot_graph(layers, output_shape=True, verbose=False):
 
         if output_shape:
             label += '\n' + \
-                ' output shape: {0}'.format(layer.get_output_shape())
+                ' output shape: {0}'.format(
+                        lasagne.layers.get_output_shape(layer))
         pydot_nodes[key] = pydot.Node(key,
                                       label=label,
                                       shape='record',
