@@ -2,6 +2,8 @@
 
 # Heavily inspired by the code in the Lasagne MNIST example:
 # https://github.com/Lasagne/Lasagne/blob/master/examples/mnist.py
+#
+# Least concrete part of holo-nets, wouldn't recommend using it
 
 import lasagne.updates
 import lasagne.objectives
@@ -33,6 +35,8 @@ class Expressions:
         - regularisation - regularisation function to apply (for
         lasagne.regularization.l2)
         - extra_loss - arbitrary extra loss function
+        - update_utility - arbitrary extra update utility function
+        - momentum - use Lasagne's apply_momentum with given momentum
     """
     def __init__(self, output_layer, dataset, batch_size=128, 
             update_rule=lasagne.updates.adam,
@@ -43,7 +47,9 @@ class Expressions:
             deterministic=False,
             learning_rate=0.001,
             regularisation=lambda x: 0.,
-            extra_loss=0.):
+            extra_loss=0.,
+            update_utility=lambda x: x,
+            momentum=None):
         self.output_layer = output_layer
         self.dataset = enforce_shared(dataset, X_tensor_type, y_tensor_type)
         self.batch_size = batch_size
@@ -70,9 +76,13 @@ class Expressions:
                     + extra_loss
 
         # build initial list of updates at initialisation (makes sense right)
-
         self.updates = update_rule(self.loss_train, self.all_params, 
                 learning_rate)
+        # update utility functions
+        self.updates = update_utility(self.updates)
+        if momentum:
+            self.updates = lasagne.updates.apply_momentum(updates, 
+                    self.all_params, momentum=momentum)
 
         # initialise empty channels dictionary
         self.channels = {}
