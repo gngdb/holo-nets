@@ -67,7 +67,8 @@ class Expressions:
                 self.X_batch)
         self.deterministic_output = lasagne.layers.get_output(self.output_layer,
             self.X_batch, deterministic=True)
-        self.all_params = lasagne.layers.get_all_params(self.output_layer)
+        self.all_params = lasagne.layers.get_all_params(self.output_layer, 
+                trainable=True)
         self.loss_train = loss_aggregate(loss_function(self.network_output, 
             self.y_batch)) + sum([regularisation(p) for p in self.all_params]) \
                     + extra_loss
@@ -210,7 +211,7 @@ class Expressions:
         If required, also specify custom name.
         """
         self.pred = T.argmax(
-            lasagne.layers.get_output(self.output_layer,self.X_batch, 
+            lasagne.layers.get_output(self.output_layer, self.X_batch, 
                 deterministic=deterministic), axis=1)
         accuracy = T.mean(T.eq(self.pred, self.y_batch), 
                 dtype=theano.config.floatX)
