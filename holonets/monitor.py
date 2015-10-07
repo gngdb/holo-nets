@@ -82,7 +82,7 @@ class Expressions:
         # update utility functions
         self.updates = update_utility(self.updates)
         if momentum:
-            self.updates = lasagne.updates.apply_momentum(updates, 
+            self.updates = lasagne.updates.apply_momentum(self.updates, 
                     self.all_params, momentum=momentum)
 
         # initialise empty channels dictionary
