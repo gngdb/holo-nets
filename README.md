@@ -1,6 +1,10 @@
 [![Stories in Ready](https://badge.waffle.io/gngdb/holo-nets.png?label=ready&title=Ready)](https://waffle.io/gngdb/holo-nets)
 
-![Travis Badge](https://travis-ci.org/gngdb/holo-nets.svg?branch=master)
+# No Longer Developed
+
+I don't think I ever implemented all the features I was aiming to develop
+in this and I don't use this anymore. I'm leaving it up for now, but it
+will almost certainly not be developed.
 
 # holo-nets
 
